@@ -1,3 +1,4 @@
+#%%
 '''
 MNIST implementation using tensorflow
 '''
@@ -18,6 +19,7 @@ z = tf.matmul(x, W) + b
 #Activation
 y = tf.nn.softmax(z)
 
+#%%
 '''
     Training with cross entropy loss function
 '''
@@ -30,6 +32,7 @@ cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=y_
 learning_rate = 0.05
 train_step = tf.train.GradientDescentOptimizer(learning_rate).minimize(cross_entropy)
 
+#%%
 '''
     Begin training execution of the defined model above
 '''
@@ -44,6 +47,7 @@ for i in range(epoch):
     batch_xs, batch_ys = mnist_dataset.train.next_batch(100)
     sess.run(train_step, feed_dict={x: batch_xs, y_: batch_ys})
 
+#%%
 '''
     Evaluating...
 '''
