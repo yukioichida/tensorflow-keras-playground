@@ -1,3 +1,11 @@
+import logging
+import logging.config
+
+logging.config.fileConfig("log.conf")
+# create logger
+logger = logging.getLogger("main")
+
+logger.info("importing keras")
 from keras.layers.core import Activation, Dense, Dropout, SpatialDropout1D
 from keras.layers.embeddings import Embedding
 from keras.layers.recurrent import LSTM
@@ -9,13 +17,8 @@ import matplotlib.pyplot as plt
 import nltk
 import numpy as np
 import os
-import logging
-import logging.config
 
-logging.config.fileConfig("log.conf")
-
-# create logger
-logger = logging.getLogger("main")
+logger.info("Starting script...")
 
 max_len = 0
 word_freqs = collections.Counter()
@@ -36,17 +39,14 @@ for line in data_file:
     for word in words:
         word_freqs[word] += 1
     num_items += 1
-
 data_file.close()
-
-logger.info("maxlen: " + str(max_len))
 
 vocab_size = min(MAX_FEATURES, len(word_freqs)) + 2
 word2index = {x[0] : i+2 for i,x in enumerate(word_freqs.most_common(MAX_FEATURES))}
 word2index['PAD'] = 0 # padding
 word2index['UNK'] = 1 # unknown token
 
-index2word = {v:k for v,k in word2index.items()}
+index2word = {v:k for k,v in word2index.items()}
 
 # Populating dataframes...
 X = np.empty((num_items, ), dtype=list)
@@ -76,11 +76,12 @@ EMBEDDING_SIZE = 128
 HIDDEN_LAYER_SIZE = 64
 BATCH_SIZE = 32
 NUM_EPOCHS = 10
+DROPOUT_RATE = 0.2
 
 model = Sequential()
 model.add(Embedding(vocab_size, EMBEDDING_SIZE, input_length=MAX_SENTENCE_LENGTH))
-model.add(SpatialDropout1D(0.1))
-model.add(LSTM(HIDDEN_LAYER_SIZE, dropout=0.1, recurrent_dropout=0.1))
+#model.add(SpatialDropout1D(DROPOUT_RATE))
+model.add(LSTM(HIDDEN_LAYER_SIZE, dropout=DROPOUT_RATE, recurrent_dropout=DROPOUT_RATE))
 model.add(Dense(1))
 model.add(Activation("sigmoid"))
 
@@ -89,18 +90,8 @@ model.compile(loss="binary_crossentropy", optimizer="adam", metrics=["accuracy"]
 logger.info("Training started")
 history = model.fit(Xtrain, ytrain, batch_size=BATCH_SIZE, epochs=NUM_EPOCHS, validation_data=(Xtest, ytest))
 
-#Plot
-plt.subplot(211)
-plt.title("Accuracy")
-plt.plot(history.history["acc"], color="g", label="Train")
-plt.plot(history.history["val_acc"], color="b", label="Validation")
-plt.legend(loc="best")
+model.save('lstm_trained.h5')
 
-plt.subplot(212)
-plt.title("Loss")
-plt.plot(history.history["loss"], color="g", label="Train")
-plt.plot(history.history["val_loss"], color="b", label="Validation")
-plt.legend(loc="best")
+score, acc = model.evaluate(Xtest, ytest, batch_size=BATCH_SIZE)
+logger.info("Test score: %.3f, accuracy: %.3f" % (score, acc))
 
-plt.tight_layout()
-plt.show()
